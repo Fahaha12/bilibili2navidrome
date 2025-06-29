@@ -29,3 +29,7 @@ pnpm-debug.log*
 .vscode/counter/
 .vscode/*.counter
 .vscode/*.txt
+utils/__pycache__/tag_editor.cpython-311.pyc
+utils/__pycache__/navidrome.cpython-311.pyc
+utils/__pycache__/downloader.cpython-311.pyc
+__pycache__/config.cpython-311.pyc

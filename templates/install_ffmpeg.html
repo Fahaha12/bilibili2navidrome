@@ -1,0 +1,119 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card p-4 mb-4">
+            <h2 class="mb-4 text-center text-primary">
+                <i class="bi bi-tools me-2"></i>FFmpeg安装指南
+            </h2>
+            
+            <div class="alert alert-info">
+                <h4 class="alert-heading">为什么需要安装FFmpeg？</h4>
+                <p>
+                    FFmpeg是一个用于处理多媒体文件的开源工具集，本应用需要它来将下载的音频转换为MP3格式。
+                    请按照您的操作系统选择下面的安装方法。
+                </p>
+            </div>
+            
+            <div class="accordion mb-4" id="installAccordion">
+                <!-- Windows 安装指南 -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#windowsInstall">
+                            <i class="bi bi-windows me-2"></i>Windows 安装指南
+                        </button>
+                    </h2>
+                    <div id="windowsInstall" class="accordion-collapse collapse show" data-bs-parent="#installAccordion">
+                        <div class="accordion-body">
+                            <ol>
+                                <li>访问 <a href="https://ffmpeg.org/download.html" target="_blank">FFmpeg官网</a></li>
+                                <li>在"Get packages & executable files"部分，点击"Windows builds from gyan.dev"</li>
+                                <li>下载最新版本（文件名如：ffmpeg-release-full.7z）</li>
+                                <li>解压下载的文件到任意目录（如：C:\ffmpeg）</li>
+                                <li>将FFmpeg添加到系统PATH：
+                                    <ul>
+                                        <li>按下Win+R，输入<code>sysdm.cpl</code>并回车</li>
+                                        <li>转到"高级"选项卡，点击"环境变量"</li>
+                                        <li>在"系统变量"部分，找到并选择<code>Path</code>变量</li>
+                                        <li>点击"编辑"，然后"新建"</li>
+                                        <li>添加FFmpeg的bin目录路径（如：<code>C:\ffmpeg\bin</code>）</li>
+                                        <li>点击"确定"保存所有更改</li>
+                                    </ul>
+                                </li>
+                                <li>验证安装：
+                                    <ol>
+                                        <li>打开命令提示符（CMD）</li>
+                                        <li>输入：<code>ffmpeg -version</code></li>
+                                        <li>如果看到版本信息，说明安装成功</li>
+                                    </ol>
+                                </li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- macOS 安装指南 -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#macosInstall">
+                            <i class="bi bi-apple me-2"></i>macOS 安装指南
+                        </button>
+                    </h2>
+                    <div id="macosInstall" class="accordion-collapse collapse" data-bs-parent="#installAccordion">
+                        <div class="accordion-body">
+                            <ol>
+                                <li>打开终端（Terminal）</li>
+                                <li>安装Homebrew（如果尚未安装）：
+                                    <pre><code>/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"</code></pre>
+                                </li>
+                                <li>通过Homebrew安装FFmpeg：
+                                    <pre><code>brew install ffmpeg</code></pre>
+                                </li>
+                                <li>验证安装：
+                                    <pre><code>ffmpeg -version</code></pre>
+                                </li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Linux 安装指南 -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#linuxInstall">
+                            <i class="bi bi-ubuntu me-2"></i>Linux 安装指南
+                        </button>
+                    </h2>
+                    <div id="linuxInstall" class="accordion-collapse collapse" data-bs-parent="#installAccordion">
+                        <div class="accordion-body">
+                            <ol>
+                                <li>打开终端</li>
+                                <li>对于基于Debian的系统（如Ubuntu）：
+                                    <pre><code>sudo apt update
+sudo apt install ffmpeg</code></pre>
+                                </li>
+                                <li>对于基于RPM的系统（如Fedora）：
+                                    <pre><code>sudo dnf install ffmpeg</code></pre>
+                                </li>
+                                <li>验证安装：
+                                    <pre><code>ffmpeg -version</code></pre>
+                                </li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-grid gap-3 mt-4">
+                <a href="/" class="btn btn-primary btn-lg">
+                    <i class="bi bi-arrow-left me-2"></i>返回首页
+                </a>
+                <a href="https://ffmpeg.org/download.html" target="_blank" class="btn btn-outline-primary btn-lg">
+                    <i class="bi bi-download me-2"></i>访问FFmpeg官网
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

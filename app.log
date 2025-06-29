@@ -1,0 +1,17 @@
+2025-06-29 15:06:38,222 - app - ERROR - 下载过程中出错: name 'traceback' is not defined
+Traceback (most recent call last):
+  File "C:\Users\suzuk\3D Objects\bilibili2navidrome\utils\downloader.py", line 71, in download_bilibili_audio
+    raise Exception("文件转换失败，未生成MP3文件")
+Exception: 文件转换失败，未生成MP3文件
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\suzuk\3D Objects\bilibili2navidrome\app.py", line 52, in download
+    result = download_bilibili_audio(url)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\suzuk\3D Objects\bilibili2navidrome\utils\downloader.py", line 84, in download_bilibili_audio
+    logger.error(f"下载失败: {str(e)}\n{traceback.format_exc()}")
+                                        ^^^^^^^^^
+NameError: name 'traceback' is not defined
+
