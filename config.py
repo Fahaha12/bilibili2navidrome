@@ -21,3 +21,9 @@ DEFAULT_TAGS = {
 # 日志配置
 LOG_LEVEL = "DEBUG"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
 LOG_FILE = "app.log"
+
+# 密码配置
+LOGIN_REQUIRED = True  # 是否启用登录验证
+ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', 'admin')  # 管理员用户名
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'password')  # 管理员密码
+SESSION_TIMEOUT = 3600  # 会话超时时间(秒)

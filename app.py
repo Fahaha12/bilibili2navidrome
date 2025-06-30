@@ -1,7 +1,7 @@
 import subprocess
 import time
 from venv import logger
-from flask import Flask, render_template, request, jsonify, redirect, url_for, send_file, session
+from flask import Flask, flash, render_template, request, jsonify, redirect, url_for, send_file, session
 from utils.downloader import check_ffmpeg_installed, download_bilibili_audio
 from utils.navidrome import trigger_navidrome_scan
 from utils.tag_editor import get_audio_tags, update_audio_tags
@@ -14,10 +14,26 @@ from mutagen.mp3 import MP3
 from mutagen.id3 import ID3
 from io import BytesIO
 from pathlib import Path
+from functools import wraps
+from werkzeug.security import generate_password_hash, check_password_hash
+from config import LOGIN_REQUIRED, ADMIN_USERNAME, ADMIN_PASSWORD, SESSION_TIMEOUT
+from dotenv import load_dotenv
+load_dotenv()  # 加载.env文件
 
 app = Flask(__name__)
+app.secret_key = os.urandom(24)  # 确保有安全的密钥
+app.config['PERMANENT_SESSION_LIFETIME'] = SESSION_TIMEOUT
 app.config.from_pyfile('config.py')
 app.secret_key = os.urandom(24)  # 添加密钥用于session
+
+# 登录验证装饰器
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if LOGIN_REQUIRED and not session.get('logged_in'):
+            return redirect(url_for('login', next=request.url))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # 配置日志
 file_handler = logging.FileHandler('app.log')
@@ -44,10 +60,12 @@ def internal_server_error(e):
                            details="请查看日志获取更多信息"), 500
 
 @app.route('/')
+@login_required
 def index():
     return render_template('index.html')
 
 @app.route('/download', methods=['POST'])
+@login_required
 def download():
     try:
         url = request.form['url']
@@ -249,6 +267,38 @@ def upload_cookies():
     except Exception as e:
         logger.error(f"上传cookies失败: {str(e)}")
         return jsonify({"success": False, "message": str(e)}), 500
+
+# 添加登录路由
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if not LOGIN_REQUIRED:
+        return redirect(url_for('index'))
     
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+            session['logged_in'] = True
+            session['username'] = username
+            session.permanent = True
+            app.permanent_session_lifetime = SESSION_TIMEOUT
+            
+            next_page = request.args.get('next')
+            return redirect(next_page or url_for('index'))
+        else:
+            flash('用户名或密码错误')
+            return redirect(url_for('login'))
+    
+    return render_template('login.html')
+
+# 添加登出路由
+@app.route('/logout')
+@login_required
+def logout():
+    session.clear()
+    return redirect(url_for('index'))
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=app.config['DEBUG'])
+    debug = os.environ.get('DEBUG', 'False') == 'True'
+    app.run(host='0.0.0.0', port=5000, debug=debug)
