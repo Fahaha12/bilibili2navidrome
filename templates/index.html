@@ -52,12 +52,12 @@
                 <form id="download-form" class="mb-4">
                     <div class="input-group">
                         <input type="text" id="url" class="form-control form-control-lg" 
-                               placeholder="https://www.bilibili.com/video/BV..." required>
+                               placeholder="粘贴Bilibili链接或分享内容（自动识别）" required>
                         <button type="submit" class="btn btn-primary btn-lg">
                             <i class="bi bi-download me-2"></i>下载
                         </button>
                     </div>
-                    <div class="form-text mt-2">支持bilibili.com和b23.tv域名的链接</div>
+                    <div class="form-text mt-2">支持直接粘贴客户端分享内容（自动提取链接）</div>
                 </form>
             </div>
             
@@ -124,7 +124,6 @@
         // Cookies上传
         const cookiesForm = document.getElementById('cookies-form');
         const cookiesResult = document.getElementById('cookies-result');
-        
         cookiesForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const fileInput = document.getElementById('cookies-file');
@@ -168,8 +167,7 @@
                 .catch(error => {
                     console.error('FFmpeg检查失败:', error);
                 });
-        }
-        
+        } 
         // 页面加载时检查FFmpeg
         checkFFmpeg();
         
@@ -181,6 +179,47 @@
         // 添加表单提交前的FFmpeg检查
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            let urlInput = document.getElementById('url');
+            let originalUrl = urlInput.value.trim();
+            
+            // 先检查是否已经是合法URL（避免重复处理）
+            let finalUrl = originalUrl;
+            
+            // 只有不以http开头的才尝试提取
+            if (!originalUrl.startsWith('http')) {
+                const extractedUrl = extractBilibiliUrl(originalUrl);
+                if (!extractedUrl) {
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            未检测到有效的Bilibili视频链接！
+                            <div class="mt-2 small">
+                                请粘贴完整的B站视频链接或BV号（如 BV1xxx 或 https://b23.tv/xxx）
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+                finalUrl = extractedUrl;
+            }
+            
+            // 验证确实是B站域名
+            if (!finalUrl.includes('bilibili.com') && !finalUrl.includes('b23.tv')) {
+                resultDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        仅支持Bilibili视频链接！
+                        <div class="mt-2 small">
+                            请使用 bilibili.com 或 b23.tv 的链接
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 更新输入框显示提取后的干净URL
+            urlInput.value = finalUrl; 
             
             // 再次检查FFmpeg
             const ffmpegCheck = await fetch('/check_ffmpeg').then(r => r.json());
@@ -256,5 +295,59 @@
             }
         });
     });
+
+    function extractBilibiliUrl(text) {
+        // 完整的B站视频URL匹配模式
+        const patterns = [
+            // 1. 标准BV号链接（包含bilibili.com）
+            /(https?:\/\/(www\.)?bilibili\.com\/video\/((BV|bv)[a-zA-Z0-9]{10})([\/?#&]|$))/,
+            
+            // 2. 手机端短链接（b23.tv）
+            /(https?:\/\/b23\.tv\/[a-zA-Z0-9]+)([\/?#&]|$)/,
+            
+            // 3. 纯BV号（严格匹配）
+            /^(BV|bv)[a-zA-Z0-9]{10}$/,
+            
+            // 4. 文本中的BV号（宽松匹配）
+            /(BV|bv)[a-zA-Z0-9]{10}/,
+            
+            // 5. 旧版av号
+            /(av|AV)\d+/,
+            
+            // 6. 分享文本（中文括号）
+            /【.*】\s*(https?:\/\/(www\.)?(bilibili\.com|b23\.tv)[^\s]+)/,
+            
+            // 7. 分享文本（英文括号）
+            /\[.*\]\s*(https?:\/\/(www\.)?(bilibili\.com|b23\.tv)[^\s]+)/
+        ];
+        
+        for (const pattern of patterns) {
+            const match = text.match(pattern);
+            if (match) {
+                // 处理分享文本
+                if (pattern.toString().includes('【') || pattern.toString().includes('[')) {
+                    return match[1].split(/[?&#]/)[0];
+                }
+                // 处理短链接
+                else if (pattern.toString().includes('b23.tv')) {
+                    return match[1];
+                }
+                // 处理纯BV号（严格匹配）
+                else if (pattern.toString() === '/^(BV|bv)[a-zA-Z0-9]{10}$/') {
+                    return `https://www.bilibili.com/video/${match[0]}`;
+                }
+                // 处理文本中的BV号
+                else if (pattern.toString().includes('BV') || pattern.toString().includes('bv')) {
+                    return `https://www.bilibili.com/video/${match[0]}`;
+                }
+                // 处理av号
+                else if (pattern.toString().includes('av') || pattern.toString().includes('AV')) {
+                    return `https://www.bilibili.com/video/${match[0]}`;
+                }
+            }
+        }
+        
+        return null;
+    }
 </script>
 {% endblock %}
