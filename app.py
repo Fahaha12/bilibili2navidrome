@@ -268,7 +268,7 @@ def upload_cookies():
         logger.error(f"上传cookies失败: {str(e)}")
         return jsonify({"success": False, "message": str(e)}), 500
 
-# 添加登录路由
+# 登录路由
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if not LOGIN_REQUIRED:
@@ -292,7 +292,7 @@ def login():
     
     return render_template('login.html')
 
-# 添加登出路由
+# 登出路由
 @app.route('/logout')
 @login_required
 def logout():
