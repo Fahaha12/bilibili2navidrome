@@ -15,7 +15,6 @@ from utils.exceptions import ValidationError, DownloadError, TagEditError, Authe
 from controllers.download_controller import DownloadController
 from controllers.tag_controller import TagController
 from controllers.auth_controller import AuthController
-from controllers.batch_controller import BatchController
 from services.auth_service import AuthService
 from config import LOGIN_REQUIRED, DOWNLOAD_PATH, TEMP_PATH
 
@@ -34,7 +33,6 @@ logger = Logger(app)
 download_controller = DownloadController()
 tag_controller = TagController()
 auth_controller = AuthController()
-batch_controller = BatchController()
 auth_service = AuthService()
 
 # 错误处理装饰器
@@ -91,23 +89,6 @@ def internal_server_error(e):
 def index():
     """主页"""
     return render_template('index.html')
-
-@app.route('/batch')
-@auth_service.login_required_decorator
-@handle_errors
-def batch_download():
-    """批量下载页面"""
-    result = batch_controller.get_batch_page()
-    
-    if result['success']:
-        data = result['data']
-        return render_template('batch_download.html', 
-                             batches=data['batches'],
-                             statistics=data['statistics'])
-    else:
-        return render_template('error.html', 
-                             message=result['message'],
-                             details="请稍后重试"), 500
 
 @app.route('/download', methods=['POST'])
 @auth_service.login_required_decorator
@@ -266,72 +247,6 @@ def logout():
     else:
         flash(result['message'])
         return redirect(url_for('index'))
-
-# 批量下载API路由
-@app.route('/api/batch/list')
-@auth_service.login_required_decorator
-def api_batch_list():
-    """获取批量下载列表"""
-    result = batch_controller.get_batch_page()
-    return jsonify(result)
-
-@app.route('/api/batch/create', methods=['POST'])
-@auth_service.login_required_decorator
-def api_batch_create():
-    """创建批量下载任务"""
-    result = batch_controller.create_batch_download()
-    return jsonify(result)
-
-@app.route('/api/batch/<batch_id>/start', methods=['POST'])
-@auth_service.login_required_decorator
-def api_batch_start(batch_id):
-    """启动批量下载任务"""
-    result = batch_controller.start_batch_download(batch_id)
-    return jsonify(result)
-
-@app.route('/api/batch/<batch_id>/cancel', methods=['POST'])
-@auth_service.login_required_decorator
-def api_batch_cancel(batch_id):
-    """取消批量下载任务"""
-    result = batch_controller.cancel_batch_download(batch_id)
-    return jsonify(result)
-
-@app.route('/api/batch/<batch_id>/delete', methods=['DELETE'])
-@auth_service.login_required_decorator
-def api_batch_delete(batch_id):
-    """删除批量下载任务"""
-    result = batch_controller.delete_batch_download(batch_id)
-    return jsonify(result)
-
-@app.route('/api/batch/<batch_id>/detail')
-@auth_service.login_required_decorator
-def api_batch_detail(batch_id):
-    """获取批量下载详情"""
-    result = batch_controller.get_batch_detail(batch_id)
-    return jsonify(result)
-
-@app.route('/api/batch/<batch_id>/progress')
-@auth_service.login_required_decorator
-def api_batch_progress(batch_id):
-    """获取批量下载进度"""
-    result = batch_controller.get_batch_progress(batch_id)
-    return jsonify(result)
-
-@app.route('/api/batch/validate-urls', methods=['POST'])
-@auth_service.login_required_decorator
-def api_batch_validate_urls():
-    """验证URL列表"""
-    data = request.get_json() or {}
-    urls_text = data.get('urls', '')
-    result = batch_controller.validate_urls(urls_text)
-    return jsonify(result)
-
-@app.route('/api/batch/statistics')
-@auth_service.login_required_decorator
-def api_batch_statistics():
-    """获取批量下载统计信息"""
-    result = batch_controller.get_batch_statistics()
-    return jsonify(result)
 
 if __name__ == '__main__':
     debug = os.environ.get('DEBUG', 'False') == 'True'

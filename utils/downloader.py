@@ -8,12 +8,19 @@ import shutil
 import subprocess
 
 # 设置日志
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def sanitize_filename(filename):
     """移除文件名中的非法字符"""
-    return re.sub(r'[\\/*?:"<>|]', "", filename)
+    if not filename:
+        return ""
+    # 移除危险字符
+    cleaned = re.sub(r'[\\/*?:"<>|]', "", filename)
+    # 移除多余空格
+    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+    # 移除开头和结尾的点
+    cleaned = cleaned.strip('.')
+    return cleaned
 
 def download_bilibili_audio(url):
     """下载B站音频并返回文件信息"""
@@ -28,9 +35,14 @@ def download_bilibili_audio(url):
         os.makedirs(TEMP_PATH, exist_ok=True)
         os.makedirs(DOWNLOAD_PATH, exist_ok=True)
         
+        # 构建输出文件名模板
+        safe_title_template = sanitize_filename('%(title)s')
+        if not safe_title_template:
+            safe_title_template = 'Bilibili_Audio'
+        
         ydl_opts = {
             'format': 'bestaudio/best',
-            'outtmpl': os.path.join(DOWNLOAD_PATH, '%(title)s.%(ext)s'),
+            'outtmpl': os.path.join(DOWNLOAD_PATH, f'{safe_title_template}.%(ext)s'),
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
@@ -45,6 +57,8 @@ def download_bilibili_audio(url):
             # 添加以下配置以解决会员视频问题
             'format_sort': ['res:720', 'ext:mp4'],  # 优先选择720p格式
             'cookies': os.path.join(TEMP_PATH, 'cookies.txt') if os.path.exists(os.path.join(TEMP_PATH, 'cookies.txt')) else None,
+            'extract_flat': False,
+            'no_warnings': False,
         }
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -62,8 +76,9 @@ def download_bilibili_audio(url):
             if not os.path.exists(final_filename):
                 raise Exception("文件转换失败，未生成MP3文件")
             
-            # 获取基础文件名（不带扩展名）
+            # 获取基础文件名（不带扩展名）并清理
             base_name = os.path.splitext(os.path.basename(final_filename))[0]
+            base_name = sanitize_filename(base_name)
             
             # 处理封面 - 直接保存到下载目录
             cover_filename = None

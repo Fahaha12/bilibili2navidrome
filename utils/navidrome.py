@@ -3,7 +3,6 @@ import logging
 import traceback
 
 # 设置日志
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def trigger_navidrome_scan():

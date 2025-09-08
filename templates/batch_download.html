@@ -1,0 +1,520 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- 批量下载创建区域 -->
+        <div class="card p-4 mb-4">
+            <h2 class="mb-4"><i class="bi bi-cloud-download me-2"></i>批量下载</h2>
+            <p class="text-muted mb-4">一次性下载多个Bilibili视频的音频文件</p>
+            
+            <form id="batch-form">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="batch-name" class="form-label">批量下载名称</label>
+                        <input type="text" id="batch-name" name="name" class="form-control" 
+                               placeholder="例如：我的音乐收藏" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="auto-edit" class="form-label">自动编辑标签</label>
+                        <select id="auto-edit" name="auto_edit_tags" class="form-select">
+                            <option value="true">是</option>
+                            <option value="false">否</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="urls-input" class="form-label">URL列表</label>
+                    <textarea id="urls-input" name="urls" class="form-control" rows="8" 
+                              placeholder="请输入Bilibili视频URL，每行一个：&#10;https://www.bilibili.com/video/BV1xxx&#10;https://b23.tv/xxx&#10;BV1xxx&#10;&#10;支持多种格式：&#10;- 完整URL&#10;- 短链接&#10;- BV号&#10;- 分享文本（自动提取）" required></textarea>
+                    <div class="form-text">
+                        支持多种格式：完整URL、短链接、BV号、分享文本（自动提取）
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <button type="button" id="validate-urls" class="btn btn-outline-primary">
+                        <i class="bi bi-check-circle me-2"></i>验证URL
+                    </button>
+                    <button type="submit" id="create-batch" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>创建批量下载
+                    </button>
+                </div>
+            </form>
+            
+            <!-- URL验证结果 -->
+            <div id="url-validation-result" class="mt-3" style="display: none;"></div>
+        </div>
+        
+        <!-- 批量下载任务列表 -->
+        <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4><i class="bi bi-list-task me-2"></i>批量下载任务</h4>
+                <button type="button" id="refresh-batches" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-clockwise me-1"></i>刷新
+                </button>
+            </div>
+            
+            <!-- 统计信息 -->
+            <div id="batch-statistics" class="row mb-4">
+                <!-- 统计信息将通过JavaScript动态加载 -->
+            </div>
+            
+            <!-- 任务列表 -->
+            <div id="batch-list">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2">加载中...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 批量下载详情模态框 -->
+<div class="modal fade" id="batchDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">批量下载详情</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="batch-detail-content">
+                    <!-- 详情内容将通过JavaScript动态加载 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const batchForm = document.getElementById('batch-form');
+    const validateUrlsBtn = document.getElementById('validate-urls');
+    const createBatchBtn = document.getElementById('create-batch');
+    const refreshBatchesBtn = document.getElementById('refresh-batches');
+    const urlValidationResult = document.getElementById('url-validation-result');
+    const batchList = document.getElementById('batch-list');
+    const batchStatistics = document.getElementById('batch-statistics');
+    
+    // 页面加载时获取数据
+    loadBatchData();
+    
+    // URL验证
+    validateUrlsBtn.addEventListener('click', function() {
+        const urlsText = document.getElementById('urls-input').value.trim();
+        if (!urlsText) {
+            showAlert('请输入URL列表', 'warning');
+            return;
+        }
+        
+        validateUrlsBtn.disabled = true;
+        validateUrlsBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>验证中...';
+        
+        fetch('/api/batch/validate-urls', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ urls: urlsText })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showUrlValidationResult(data.data);
+            } else {
+                showAlert(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            showAlert('验证失败: ' + error.message, 'danger');
+        })
+        .finally(() => {
+            validateUrlsBtn.disabled = false;
+            validateUrlsBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>验证URL';
+        });
+    });
+    
+    // 创建批量下载
+    batchForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(batchForm);
+        const data = {
+            name: formData.get('name'),
+            urls: formData.get('urls'),
+            auto_edit_tags: formData.get('auto_edit_tags') === 'true',
+            default_tags: {}
+        };
+        
+        createBatchBtn.disabled = true;
+        createBatchBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>创建中...';
+        
+        fetch('/api/batch/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                batchForm.reset();
+                urlValidationResult.style.display = 'none';
+                loadBatchData();
+            } else {
+                showAlert(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            showAlert('创建失败: ' + error.message, 'danger');
+        })
+        .finally(() => {
+            createBatchBtn.disabled = false;
+            createBatchBtn.innerHTML = '<i class="bi bi-plus-circle me-2"></i>创建批量下载';
+        });
+    });
+    
+    // 刷新批量下载列表
+    refreshBatchesBtn.addEventListener('click', function() {
+        loadBatchData();
+    });
+    
+    // 加载批量下载数据
+    function loadBatchData() {
+        fetch('/api/batch/list')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayBatchStatistics(data.data.statistics);
+                displayBatchList(data.data.batches);
+            } else {
+                showAlert('加载数据失败: ' + data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            showAlert('加载数据失败: ' + error.message, 'danger');
+        });
+    }
+    
+    // 显示统计信息
+    function displayBatchStatistics(statistics) {
+        batchStatistics.innerHTML = `
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary">${statistics.total_batches}</h5>
+                        <p class="card-text">总任务数</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title text-success">${statistics.completed_batches}</h5>
+                        <p class="card-text">已完成</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title text-warning">${statistics.running_batches}</h5>
+                        <p class="card-text">进行中</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title text-info">${statistics.success_rate.toFixed(1)}%</h5>
+                        <p class="card-text">成功率</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // 显示批量下载列表
+    function displayBatchList(batches) {
+        if (batches.length === 0) {
+            batchList.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="bi bi-inbox display-1 text-muted"></i>
+                    <p class="mt-3 text-muted">暂无批量下载任务</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        batches.forEach(batch => {
+            const statusClass = getStatusClass(batch.status);
+            const statusText = getStatusText(batch.status);
+            
+            html += `
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h6 class="card-title mb-1">${batch.name}</h6>
+                                <p class="card-text text-muted small mb-0">
+                                    创建时间: ${new Date(batch.created_at).toLocaleString()}
+                                </p>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="d-flex align-items-center">
+                                    <span class="badge ${statusClass} me-2">${statusText}</span>
+                                    <span class="text-muted small">${batch.completed_tasks}/${batch.total_tasks}</span>
+                                </div>
+                                <div class="progress mt-1" style="height: 6px;">
+                                    <div class="progress-bar" style="width: ${batch.progress}%"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-outline-primary" onclick="viewBatchDetail('${batch.id}')">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    ${getActionButtons(batch)}
+                                    <button type="button" class="btn btn-outline-danger" onclick="deleteBatch('${batch.id}')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        batchList.innerHTML = html;
+    }
+    
+    // 显示URL验证结果
+    function showUrlValidationResult(data) {
+        let html = `
+            <div class="alert alert-info">
+                <h6><i class="bi bi-info-circle me-2"></i>URL验证结果</h6>
+                <p class="mb-2">找到 <strong>${data.total_valid}</strong> 个有效URL</p>
+        `;
+        
+        if (data.total_invalid > 0) {
+            html += `<p class="mb-2">发现 <strong>${data.total_invalid}</strong> 个无效URL：</p>`;
+            html += '<ul class="mb-0">';
+            data.invalid_lines.forEach(item => {
+                html += `<li>第${item.line_number}行: ${item.content} - ${item.reason}</li>`;
+            });
+            html += '</ul>';
+        }
+        
+        html += '</div>';
+        
+        urlValidationResult.innerHTML = html;
+        urlValidationResult.style.display = 'block';
+    }
+    
+    // 获取状态样式类
+    function getStatusClass(status) {
+        switch (status) {
+            case 'completed': return 'bg-success';
+            case 'downloading': return 'bg-primary';
+            case 'failed': return 'bg-danger';
+            case 'cancelled': return 'bg-secondary';
+            default: return 'bg-warning';
+        }
+    }
+    
+    // 获取状态文本
+    function getStatusText(status) {
+        switch (status) {
+            case 'completed': return '已完成';
+            case 'downloading': return '下载中';
+            case 'failed': return '失败';
+            case 'cancelled': return '已取消';
+            default: return '等待中';
+        }
+    }
+    
+    // 获取操作按钮
+    function getActionButtons(batch) {
+        switch (batch.status) {
+            case 'pending':
+                return `<button type="button" class="btn btn-outline-success" onclick="startBatch('${batch.id}')">
+                            <i class="bi bi-play"></i>
+                        </button>`;
+            case 'downloading':
+                return `<button type="button" class="btn btn-outline-warning" onclick="cancelBatch('${batch.id}')">
+                            <i class="bi bi-stop"></i>
+                        </button>`;
+            default:
+                return '';
+        }
+    }
+    
+    // 显示提示信息
+    function showAlert(message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        // 插入到页面顶部
+        const container = document.querySelector('.container');
+        container.insertBefore(alertDiv, container.firstChild);
+        
+        // 3秒后自动消失
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 3000);
+    }
+});
+
+// 全局函数
+function startBatch(batchId) {
+    fetch(`/api/batch/${batchId}/start`, { method: 'POST' })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(data.message, 'success');
+            loadBatchData();
+        } else {
+            showAlert(data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        showAlert('启动失败: ' + error.message, 'danger');
+    });
+}
+
+function cancelBatch(batchId) {
+    if (!confirm('确定要取消这个批量下载任务吗？')) {
+        return;
+    }
+    
+    fetch(`/api/batch/${batchId}/cancel`, { method: 'POST' })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(data.message, 'success');
+            loadBatchData();
+        } else {
+            showAlert(data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        showAlert('取消失败: ' + error.message, 'danger');
+    });
+}
+
+function deleteBatch(batchId) {
+    if (!confirm('确定要删除这个批量下载任务吗？此操作不可恢复。')) {
+        return;
+    }
+    
+    fetch(`/api/batch/${batchId}/delete`, { method: 'DELETE' })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(data.message, 'success');
+            loadBatchData();
+        } else {
+            showAlert(data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        showAlert('删除失败: ' + error.message, 'danger');
+    });
+}
+
+function viewBatchDetail(batchId) {
+    fetch(`/api/batch/${batchId}/detail`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showBatchDetailModal(data.data);
+        } else {
+            showAlert(data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        showAlert('获取详情失败: ' + error.message, 'danger');
+    });
+}
+
+function showBatchDetailModal(batch) {
+    const modal = new bootstrap.Modal(document.getElementById('batchDetailModal'));
+    const content = document.getElementById('batch-detail-content');
+    
+    let html = `
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <strong>任务名称:</strong> ${batch.name}
+            </div>
+            <div class="col-md-6">
+                <strong>状态:</strong> <span class="badge ${getStatusClass(batch.status)}">${getStatusText(batch.status)}</span>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <strong>创建时间:</strong> ${new Date(batch.created_at).toLocaleString()}
+            </div>
+            <div class="col-md-6">
+                <strong>完成时间:</strong> ${batch.completed_at ? new Date(batch.completed_at).toLocaleString() : '未完成'}
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <strong>进度:</strong> ${batch.completed_tasks}/${batch.total_tasks} (${batch.progress.toFixed(1)}%)
+                <div class="progress mt-1">
+                    <div class="progress-bar" style="width: ${batch.progress}%"></div>
+                </div>
+            </div>
+        </div>
+        <h6>任务列表:</h6>
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>标题</th>
+                        <th>艺术家</th>
+                        <th>状态</th>
+                        <th>进度</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    batch.tasks.forEach(task => {
+        html += `
+            <tr>
+                <td>${task.title || '未知'}</td>
+                <td>${task.artist || '未知'}</td>
+                <td><span class="badge ${getStatusClass(task.status)}">${getStatusText(task.status)}</span></td>
+                <td>${task.progress}%</td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    content.innerHTML = html;
+    modal.show();
+}
+</script>
+{% endblock %}
