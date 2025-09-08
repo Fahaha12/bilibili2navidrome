@@ -1,35 +1,260 @@
-.DS_Store
-node_modules
-node_modules/
-/dist
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# local env files
+# PyInstaller
+*.manifest
+# 保留app.spec作为模板
+!app.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# 项目特定文件
+# 下载文件目录（保留目录结构，但忽略内容）
+downloads/*
+!downloads/.gitkeep
+temp/*
+!temp/.gitkeep
+batch_storage/*
+!batch_storage/.gitkeep
+logs/*
+!logs/.gitkeep
+
+# 构建输出
+release/
+build/
+dist/
+
+# 环境配置
+.env
 .env.local
-.env.*.local
+.env.production
+.env.staging
 
-# Log files
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+# 日志文件
+*.log
+app.log
+*.log.*
 
-# Editor directories and files
-.idea
-.vscode
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-/node_modules/
+# 临时文件
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
 
-# VSCode Counter
-.VSCodeCounter/
-**/.VSCodeCounter/
-.vscode/counter/
-.vscode/*.counter
-.vscode/*.txt
-utils/__pycache__/tag_editor.cpython-311.pyc
-utils/__pycache__/navidrome.cpython-311.pyc
-utils/__pycache__/downloader.cpython-311.pyc
-__pycache__/config.cpython-311.pyc
+# 系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 测试文件（保留测试脚本）
+test_*.py
+*_test.py
+tests/
+
+# 文档构建
+docs/_build/
+site/
+
+# 备份文件
+*.bak
+*.backup
+*.old
+
+# 压缩文件
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# 可执行文件
+*.exe
+*.app
+*.dmg
+*.pkg
+*.deb
+*.rpm
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 依赖文件
+node_modules/
+package-lock.json
+yarn.lock
+
+# 缓存文件
+.cache/
+*.cache
+
+# 运行时文件
+*.pid
+*.sock
+
+# 开发工具
+.pytest_cache/
+.coverage
+htmlcov/
+
+# 部署相关
+docker-compose.override.yml
+.dockerignore.local
+
+# 本地开发文件
+local_*
+dev_*
+debug_*
+
+# 用户特定文件
+user_*
+personal_*
+
+# 临时目录
+tmp/
+temporary/
+
+# 媒体文件（下载的音频文件）
+*.mp3
+*.mp4
+*.avi
+*.mkv
+*.wav
+*.flac
+*.aac
+*.ogg
+
+# 图片文件（下载的封面图片）
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.webp
+*.ico
+
+# 清理脚本（临时文件）
+cleanup.py
