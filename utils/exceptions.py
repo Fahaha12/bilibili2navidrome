@@ -3,7 +3,12 @@
 """
 
 
-class BilibiliDownloaderError(Exception):
+class BaseAppException(Exception):
+    """应用基础异常类"""
+    pass
+
+
+class BilibiliDownloaderError(BaseAppException):
     """Bilibili下载器基础异常"""
     pass
 
@@ -39,5 +44,10 @@ class AuthenticationError(BilibiliDownloaderError):
 
 
 class FileError(BilibiliDownloaderError):
+    """文件操作错误"""
+    pass
+
+
+class FileOperationError(BaseAppException):
     """文件操作错误"""
     pass
