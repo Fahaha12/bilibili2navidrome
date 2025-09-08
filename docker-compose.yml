@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  bilibili2navidrome:
+    build: .
+    container_name: bilibili2navidrome
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./downloads:/app/downloads
+      - ./temp:/app/temp
+      - ./batch_storage:/app/batch_storage
+      - ./logs:/app/logs
+      - ./.env:/app/.env
+    environment:
+      - FLASK_ENV=production
+      - DOWNLOAD_PATH=/app/downloads
+      - TEMP_PATH=/app/temp
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - bilibili-network
+
+networks:
+  bilibili-network:
+    driver: bridge
+
+volumes:
+  downloads:
+  temp:
+  batch_storage:
+  logs:

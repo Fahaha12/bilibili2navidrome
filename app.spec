@@ -1,12 +1,57 @@
-# app.spec
+# -*- mode: python ; coding: utf-8 -*-
+
 block_cipher = None
 
 a = Analysis(
-    ['app.py'],  # 你的 Flask 主文件
+    ['app.py'],
     pathex=[],
     binaries=[],
-    datas=[],  # 可以添加静态文件（如 templates/, static/）
-    hiddenimports=['flask', 'yt_dlp', 'mutagen'],  # 确保所有依赖都被包含
+    datas=[
+        ('templates', 'templates'),
+        ('static', 'static'),
+        ('config.py', '.'),
+        ('requirements.txt', '.'),
+        ('env.example', '.'),
+        ('BATCH_DOWNLOAD_GUIDE.md', '.'),
+        ('PROJECT_STRUCTURE.md', '.'),
+    ],
+    hiddenimports=[
+        'flask',
+        'mutagen',
+        'mutagen.mp3',
+        'mutagen.id3',
+        'yt_dlp',
+        'dotenv',
+        'werkzeug',
+        'jinja2',
+        'markupsafe',
+        'itsdangerous',
+        'click',
+        'blinker',
+        'certifi',
+        'charset_normalizer',
+        'idna',
+        'requests',
+        'urllib3',
+        'cryptography',
+        'cffi',
+        'pycparser',
+        'six',
+        'python_dateutil',
+        'pytz',
+        'babel',
+        'markupsafe',
+        'jinja2',
+        'werkzeug',
+        'flask',
+        'mutagen',
+        'yt_dlp',
+        'dotenv',
+        'utils',
+        'models',
+        'services',
+        'controllers',
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -16,6 +61,7 @@ a = Analysis(
     cipher=block_cipher,
     noarchive=False,
 )
+
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 exe = EXE(
@@ -25,12 +71,18 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='BilibiliWebUI',  # 生成的 .exe 文件名
+    name='Bilibili2Navidrome',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,  # 压缩可执行文件
+    upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,  # 显示控制台（方便调试）
+    console=True,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+    icon='static/favicon.ico' if os.path.exists('static/favicon.ico') else None,
 )
